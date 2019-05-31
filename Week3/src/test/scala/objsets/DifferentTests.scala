@@ -1,24 +1,38 @@
 package objsets
 
-import org.scalatest.FunSuite
-
-
 import org.junit.runner.RunWith
+import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class TweetSetSuite extends FunSuite {
+class DifferentTests extends FunSuite {
   trait TestSets {
     val set1 = new Empty
-    //val set2 = set1.incl(new Tweet("a", "a body", 25))
-     val set2 = set1.incl(new Tweet("a", "a body", 20))
-    val set3 = set2.incl(new Tweet("b", "b body", 20))
-    val c = new Tweet("c", "c body", 7)
-    val d = new Tweet("d", "d body", 9)
+    val set2 = set1.incl(new Tweet("a", "d tweet", 21))
+    // val set2 = set1.incl(new Tweet("a", "a body", 20))
+    val set3 = set2.incl(new Tweet("b", "z absltly fucking awesome tweet", 21))
+    val c = new Tweet("a", "t fucking tweet", 25)
+    val d = new Tweet("d", "b tweet", 9)
+    val e = new Tweet("d", "a twt", 15)
     val set4c = set3.incl(c)
     val set4d = set3.incl(d)
     val set5 = set4c.incl(d)
+    val set6 = set5.incl(e)
   }
+
+  test("compare 2 strings") {
+    new TestSets {
+      assert("absltly fucking awesome tweet">"ya tweet")
+    }
+  }
+
+  test("compare 2 strings again") {
+    new TestSets {
+      assert("zabsltly fucking awesome tweet"<"ya tweet")
+    }
+  }
+
+/*
 
   def asSet(tweets: TweetSet): Set[Tweet] = {
     var res = Set[Tweet]()
@@ -64,12 +78,23 @@ class TweetSetSuite extends FunSuite {
     }
   }
 
+  test("find most retweeted tweet") {
+    new TestSets {
+      val setTemp = set5
+      val trends = set5.mostRetweeted
+      //assert(!trends.isEmpty)
+      //assert(trends.head.user == "a" )
+      assert(trends.user == "a")
+      assert(trends.retweets == 25)
+    }
+  }
+
   test("descending: set5") {
     new TestSets {
       val trends = set5.descendingByRetweet
       assert(!trends.isEmpty)
       assert(trends.head.user == "a" || trends.head.user == "b")
     }
-  }
+  }*/
 
   }
