@@ -361,7 +361,42 @@ object Huffman {
     * This function decodes the bit sequence `bits` using the code tree `tree` and returns
     * the resulting list of characters.
     */
-  def decode(tree: CodeTree, bits: List[Bit]): List[Char] = ???
+  def decode(tree: CodeTree, bits: List[Bit]): List[Char] = {
+    def iter(treeIter: CodeTree, bits: List[Bit], accum: List[Char]): List[Char] = bits match {
+      case List() => accum
+      case List(x) => treeIter match {
+        case Fork(left, right, chars, weight) =>
+          if (x == 0) iter(left, List(x), accum) else if (x == 1) iter(right, List(x), accum) else throw new Error("Illegal bit sequence")
+        case Leaf(char, weight) => iter(tree, List(), accum ::: List(char))
+      }
+      case List(x, y) => treeIter match {
+        case Fork(left, right, chars, weight) => if (isTreeSimple(tree, treeIter)) {
+          if (x == 0) accum:::List(left.asInstanceOf[Leaf].char, right.asInstanceOf[Leaf].char)
+          else if (x == 1) accum:::List(right.asInstanceOf[Leaf].char, left.asInstanceOf[Leaf].char)
+          else throw new Error("Illegal bit sequence")
+        }
+          else
+          {
+            if (x == 0) iter(left, List(y), accum) else if (x == 1) iter(right, List(y), accum) else throw new Error("Illegal bit sequence")
+          }
+        case Leaf(char, weight) => iter(tree, List(x, y), accum ::: List(char))
+      }
+      case x :: xs => treeIter match {
+        /*case Fork(Leaf(charL, weightL), Leaf(charR, weightR), List(charL, charR), weightL+weightR) => if (x==0) iter(Leaf(charL, weightL), x::xs, accum)
+                        else if (x==1) iter(Leaf(charR, weightR), x::xs, accum) else throw new Error("Illegal bit sequence")*/
+        case Fork(left, right, chars, weight) =>
+          if (x == 0) iter(left, xs, accum) else if (x == 1) iter(right, xs, accum) else throw new Error("Illegal bit sequence")
+
+        case Leaf(char, weight) => iter(tree, x :: xs, accum ::: List(char))
+      }
+    }
+
+    iter(tree, bits, List())
+  }
+
+  def isTreeSimple(baseTree: CodeTree, tree: CodeTree): Boolean = tree match {
+    case Fork(left, right, chars, weight) => tree == baseTree && left.isInstanceOf[Leaf] && right.isInstanceOf[Leaf]
+  }
 
   /**
     * A Huffman coding tree for the French language.
@@ -379,7 +414,7 @@ object Huffman {
   /**
     * Write a function that returns the decoded secret
     */
-  def decodedSecret: List[Char] = ???
+  def decodedSecret: List[Char] = decode(frenchCode, secret)
 
 
   // Part 4a: Encoding using Huffman tree
@@ -388,7 +423,29 @@ object Huffman {
     * This function encodes `text` using the code tree `tree`
     * into a sequence of bits.
     */
-  def encode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+  def encode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+    def iter(treeIter: CodeTree, textIter: List[Char], accum: List[Bit]): List[Bit] = textIter match {
+      case List(x) => treeIter match {
+        case Fork(left, right, chars, weight) => if (goToTheLeft(treeIter, x)) iter(left, List(x), accum:::List(0))
+                                                 else iter(right, List(x), accum:::List(1))
+        case Leaf(char, weight) => accum
+      }
+      case x::xs => treeIter match {
+        case Fork(left, right, chars, weight) => if (goToTheLeft(treeIter, x)) iter(left, x::xs, accum:::List(0))
+                                                 else iter(right, x::xs, accum:::List(1))
+        case Leaf(char, weight) => iter(tree, xs, accum)
+      }
+    }
+    iter(tree, text, List())
+  }
+
+  /*This is a service function to select whether one should go to the left subtree or to the right*/
+  def goToTheLeft(tree: CodeTree, char: Char): Boolean = tree match {
+    case Fork(left, right, chars, weight) => left match {
+      case Fork(leftIn, rightIn, charsIn, weightIn) => charsIn.contains(char)
+      case Leaf(charIn, weight) => charIn==char
+    }
+  }
 
   // Part 4b: Encoding using code table
 
@@ -398,7 +455,15 @@ object Huffman {
     * This function returns the bit sequence that represents the character `char` in
     * the code table `table`.
     */
-  def codeBits(table: CodeTable)(char: Char): List[Bit] = ???
+  def codeBits(table: CodeTable)(char: Char): List[Bit] = {
+
+    def iter(table: CodeTable, char: Char): List[Bit] = table match {
+      case List(x) => if (x._1 == char) x._2 else List()
+      case x::xs => if (x._1 == char) x._2 else iter(xs, char)
+    }
+    iter(table, char)
+
+  }
 
   /**
     * Given a code tree, create a code table which contains, for every character in the
@@ -408,14 +473,48 @@ object Huffman {
     * a valid code tree that can be represented as a code table. Using the code tables of the
     * sub-trees, think of how to build the code table for the entire tree.
     */
-  def convert(tree: CodeTree): CodeTable = ???
+  def convert(tree: CodeTree): CodeTable = {
+
+    def iter(treeIter: CodeTree, chars: List[Char], accum: CodeTable, accumBits: List[Bit]): CodeTable = chars match {
+      case List(x) => treeIter match {
+        case Fork(left, right, chars, weight) => if (goToTheLeft(treeIter, x)) iter(left, List(x), accum, accumBits:::List(0))
+                                                 else iter(right, List(x), accum, accumBits:::List(1))
+        case Leaf(char, weight) => accum:::List((char, accumBits))
+      }
+      case x::xs => treeIter match {
+        case Fork(left, right, chars, weight) => if (goToTheLeft(treeIter, x)) iter(left, x::xs, accum, accumBits:::List(0))
+                                                 else iter(right, x::xs, accum, accumBits:::List(1))
+        case Leaf(char, weight) => iter(tree, xs, accum:::List((char, accumBits)), List())
+      }
+    }
+
+    def invoke(tree: CodeTree): CodeTable = tree match {
+      case Fork(left, right, chars, weight) => iter(tree, chars, List(), List())
+      case Leaf(char, weight) => iter(tree, List(char), List(), List())
+    }
+
+    invoke(tree)
+
+  }
 
   /**
     * This function takes two code tables and merges them into one. Depending on how you
     * use it in the `convert` method above, this merge method might also do some transformations
     * on the two parameter code tables.
     */
-  def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = ???
+  def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = {
+    val list1 = getCharsFromCodeTable(a, List())
+    val list2 = getCharsFromCodeTable(b, List())
+    val list = list1:::list2
+    val codeTree = createCodeTree(list)
+    convert(codeTree)
+  }
+
+  /*This is the service function that outputs the List[Char] of the chars from the CodeTable*/
+  def getCharsFromCodeTable(codeTable: CodeTable, accum: List[Char]): List[Char] = codeTable match {
+    case List(x) => accum:::List(x._1)
+    case x::xs => getCharsFromCodeTable(xs, accum:::List(x._1))
+  }
 
   /**
     * This function encodes `text` according to the code tree `tree`.
@@ -423,5 +522,15 @@ object Huffman {
     * To speed up the encoding process, it first converts the code tree to a code table
     * and then uses it to perform the actual encoding.
     */
-  def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+  def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+    val codeTable = convert(tree)
+
+    def iter(codeTable: CodeTable, text: List[Char], accum: List[Bit]): List[Bit] = text match {
+      case List(x) => accum:::codeBits(codeTable)(x)
+      case x::xs => iter(codeTable, xs, accum:::codeBits(codeTable)(x))
+    }
+
+    iter(codeTable, text, List())
+
+  }
 }
