@@ -149,16 +149,16 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
     }
 
   override def mostRetweeted = {
-   var leftMostRetweeted: Tweet = null
-   var rightMostRetweets: Tweet = null
+   val leftMostRetweeted: Tweet = null
+   val rightMostRetweets: Tweet = null
 
-   var leftTweet: Tweet =  if (elem.retweets > {
-      var leftMostRetweeted = (left.mostRetweeted)
+   val leftTweet: Tweet =  if (elem.retweets > {
+      val leftMostRetweeted = (left.mostRetweeted)
       leftMostRetweeted.retweets
     })  elem else leftMostRetweeted
 
-    var rightTweet: Tweet = if (elem.retweets > {
-      var rightMostRetweets = (right.mostRetweeted)
+    val rightTweet: Tweet = if (elem.retweets > {
+      val rightMostRetweets = (right.mostRetweeted)
       rightMostRetweets.retweets
     })  elem else rightMostRetweets
 
