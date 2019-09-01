@@ -35,17 +35,13 @@ object Anagrams {
    *  Note: you must use `groupBy` to implement this method!
    */
   def wordOccurrences(w: Word): Occurrences = {
-  val wordSortedIgnoreCase = w.toList.map(x => if (x.isUpper) x.toLower else x).sortWith(_.compareTo(_)<0)
-    wordSortedIgnoreCase.flatMap(char => List((char,
-      {
-        var count = 0
-        for (i <- 0 until wordSortedIgnoreCase.length if wordSortedIgnoreCase(i)==char) count = count+1
-        count
-      }))).toSet.toList.sortWith((pair1,pair2)=>pair1._1.compareTo(pair2._1)<0)
+    w.toLowerCase.groupBy(identity).map{
+      case (char, times) => (char, times.length)
+    }.toList.sortBy(_._1)
   }
 
   /** Converts a sentence into its character occurrence list. */
-  def sentenceOccurrences(s: Sentence): Occurrences = wordOccurrences(s.foldLeft("")(_+_))
+  def sentenceOccurrences(s: Sentence): Occurrences = wordOccurrences(s.foldLeft("")(_ + _))
 
   /** The `dictionaryByOccurrences` is a `Map` from different occurrences to a sequence of all
    *  the words that have that occurrence count.
@@ -92,7 +88,33 @@ object Anagrams {
   //def combinations(occurrences: Occurrences): List[Occurrences] =  ???
   def combinations(occurrences: Occurrences): List[Occurrences] = {
 
-    val word = occurrences.foldLeft("")((x,y) => {
+   /* for {
+      split <- (1 to occurrences.length).toList
+      elem <- 1 to occurrences(split)._2
+      rest <- combinations(occurrences drop split)
+    } yield (occurrences(split), elem) :: rest*/
+
+   /* for {
+      //split <- (1 to occurrences.length).toList
+      tuple <- occurrences take 1
+      //elem <- 1 to tuple._2
+      rest <- combinations(occurrences drop 1)
+    } yield (tuple) :: rest*/
+
+    def subOccurences(list: (Char, Int)): List[(Char, Int)] = list match {
+      case (_: Char, int: Int) if int == 0 => List.empty
+      case (char: Char, int: Int) if int > 0 => List((char, int)) ::: subOccurences((char, int-1))
+    }
+
+    (0 to occurrences.length-1)
+    .flatMap(split =>
+    List(subOccurences(occurrences(split)))
+    /*.flatMap(subs =>
+    combinations(occurrences drop (split+1)).map(rest => rest ::: subs))*/
+    ).toList
+
+
+    /*val word = occurrences.foldLeft("")((x,y) => {
       var res = ""
       for (i <- 0 until y._2)
         res += y._1
@@ -116,7 +138,7 @@ object Anagrams {
     for(k <- 0 until listWords.length) {
       listWordOccurences = listWordOccurences:::List(wordOccurrences(listWords(k)))
     }
-    listWordOccurences
+    listWordOccurences*/
   }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
